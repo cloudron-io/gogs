@@ -45,7 +45,7 @@ func NewOauthService() {
 	setting.OauthService.OauthInfos = make(map[string]*setting.OauthInfo)
 
 	socialConfigs := make(map[string]*oauth2.Options)
-	allOauthes := []string{"github", "google", "qq", "twitter", "weibo"}
+	allOauthes := []string{"github", "google", "qq", "twitter", "weibo", "cloudron"}
 	// Load all OAuth config data.
 	for _, name := range allOauthes {
 		sec := setting.Cfg.Section("oauth." + name)
@@ -106,6 +106,13 @@ func NewOauthService() {
 		newWeiboOauth(socialConfigs["weibo"])
 		enabledOauths = append(enabledOauths, "Weibo")
 	}
+
+    // Cloudron.
+    if setting.Cfg.Section("oauth.cloudron").Key("ENABLED").MustBool() {
+        setting.OauthService.Cloudron = true
+        newCloudronOauth(socialConfigs["cloudron"])
+        enabledOauths = append(enabledOauths, "Cloudron")
+    }
 
 	log.Info("Oauth Service Enabled %s", enabledOauths)
 }
@@ -331,3 +338,45 @@ func (s *SocialWeibo) UserInfo(token *oauth2.Token, _ *url.URL) (*BasicUserInfo,
 		Name:     data.Name,
 	}, nil
 }
+
+
+// Cloudron
+
+type SocialCloudron struct {
+   opts *oauth2.Options
+}
+
+func newCloudronOauth(opts *oauth2.Options) {
+   SocialMap["cloudron"] = &SocialCloudron{opts}
+}
+
+func (s *SocialCloudron) Type() int {
+   return int(models.CLOUDRON)
+}
+
+func (s *SocialCloudron) UserInfo(token *oauth2.Token, _ *url.URL) (*BasicUserInfo, error) {
+   log.Info("UserInfo for cloudron being invoked!")
+   transport := s.opts.NewTransportFromToken(token)
+	var data struct {
+		Id    string `json:"id"`
+		Name  string `json:"username"`
+		Email string `json:"email"`
+	}
+
+   reqUrl := setting.Cfg.Section("oauth.cloudron").Key("CLOUDRON_ORIGIN").MustString("EpicFailValue")  + "/api/v1/profile"
+   r, err := transport.Client().Get(reqUrl)
+   if err != nil {
+       return nil, err
+   }
+   defer r.Body.Close()
+
+   if err = json.NewDecoder(r.Body).Decode(&data); err != nil {
+       return nil, err
+   }
+   return &BasicUserInfo{
+		Identity: data.Id,
+		Name:     data.Name,
+		Email:    data.Email,
+   }, nil
+}
+

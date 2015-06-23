@@ -206,6 +206,12 @@ img.avatar-100 {
 .social-buttons .qq:hover {
   background-color: #3cb3ff;
 }
+.social-buttons .cloudron {
+  background-color: #03a2ef;
+}
+.social-buttons .cloudron:hover {
+  background-color: #3cb3ff;
+}
 .main-wrapper {
   padding: 20px 0 40px;
 }
