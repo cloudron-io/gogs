@@ -61,7 +61,7 @@ func (f *RegisterForm) Validate(ctx *macaron.Context, errs binding.Errors) bindi
 
 type SignInForm struct {
 	UserName string `form:"uname" binding:"Required;MaxSize(35)"`
-	Password string `form:"password" binding:"Required;MinSize(6);MaxSize(255)"`
+	Password string `form:"password" binding:"Required;MinSize(2);MaxSize(255)"`
 	Remember bool   `form:"remember"`
 }
 
