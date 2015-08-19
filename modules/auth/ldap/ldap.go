@@ -77,17 +77,17 @@ func (ls Ldapsource) FindUserDN(name string) (string, bool) {
 }
 
 // searchEntry : search an LDAP source if an entry (name, passwd) is valid and in the specific filter
-func (ls Ldapsource) SearchEntry(name, passwd string) (string, string, string, bool) {
+func (ls Ldapsource) SearchEntry(name, passwd string) (string, string, string, bool, bool) {
 	userDN, found := ls.FindUserDN(name)
 	if !found {
-		return "", "", "", false
+		return "", "", "", false, false
 	}
 
 	l, err := ldapDial(ls)
 	if err != nil {
 		log.Error(4, "LDAP Connect error, %s:%v", ls.Host, err)
 		ls.Enabled = false
-		return "", "", "", false
+		return "", "", "", false, false
 	}
 
 	defer l.Close()
@@ -96,7 +96,7 @@ func (ls Ldapsource) SearchEntry(name, passwd string) (string, string, string, b
 	err = l.Bind(userDN, passwd)
 	if err != nil {
 		log.Debug("LDAP auth. failed for %s, reason: %v", userDN, err)
-		return "", "", "", false
+		return "", "", "", false, false
 	}
 
 	log.Trace("Bound successfully with userDN: %s", userDN)
@@ -109,16 +109,16 @@ func (ls Ldapsource) SearchEntry(name, passwd string) (string, string, string, b
 	sr, err := l.Search(search)
 	if err != nil {
 		log.Error(4, "LDAP Search failed unexpectedly! (%v)", err)
-		return "", "", "", false
+		return "", "", "", false, false
 	} else if len(sr.Entries) < 1 {
 		log.Error(4, "LDAP Search failed unexpectedly! (0 entries)")
-		return "", "", "", false
+		return "", "", "", false, false
 	}
 
 	name_attr := sr.Entries[0].GetAttributeValue(ls.AttributeName)
 	sn_attr := sr.Entries[0].GetAttributeValue(ls.AttributeSurname)
 	mail_attr := sr.Entries[0].GetAttributeValue(ls.AttributeMail)
-	return name_attr, sn_attr, mail_attr, true
+	return name_attr, sn_attr, mail_attr, false, true
 }
 
 func ldapDial(ls Ldapsource) (*ldap.Conn, error) {
